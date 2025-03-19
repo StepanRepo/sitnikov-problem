@@ -19,6 +19,16 @@ max_iter = 100
 
 
 class Primary:
+    """
+    A class representing a primary body in the Sitnikov problem.
+
+    Parameters
+    ----------
+    a : float
+        Semi-major axis of the orbit
+    e : float
+        Eccentricity of the orbit (must be between 0 and 1)
+    """
 
     def __init__(self, a, e):
         self.e = e
@@ -29,6 +39,19 @@ class Primary:
 
 
     def solve_kepler(self, M):
+        """
+        Solves Kepler's equation iteratively for eccentric anomaly.
+
+        Parameters
+        ----------
+        M : float or numpy.ndarray
+            Mean anomaly
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Eccentric anomaly solution modulo 2π
+        """
         e = self.e
         E0 = 0
         E = M
@@ -49,12 +72,17 @@ class Primary:
 
     def __call__(self, t):
         """
-        A function to calculate the distance between system's 
-        center of mass and primary body at moments t 
-        (given semi-major orbit axis a and eccentrisity e)
+        Calculate the distance between system's center of mass and primary body.
 
-        :param t: float scalar of array-like moments of time at which evaluate primary distance to the system's center of mass
-        :return r: array-like evaluated distances 
+        Parameters:
+        -----------
+        t : float or array-like
+            Moments of time at which to evaluate primary distance
+
+        Returns:
+        --------
+        float or array-like
+            Distances between the system's center of mass and the primary body
         """
         M = t   # according to M = 2\pi t/P, and P = 2\pi
         E = self.solve_kepler(M)
@@ -64,12 +92,45 @@ class Primary:
         return r
 
 class DE:
+    """
+    Differential equation solver for the Sitnikov problem.
+
+    Implements the equations of motion for a third body in the Sitnikov problem,
+    where two primary bodies move in elliptical orbits.
+    """
 
     def __init__(self, r, track_progress = False):
+        """
+        Initialize the differential equation solver.
+
+        Parameters:
+        -----------
+        r : callable
+            Function that returns the distance of primary bodies from center of mass
+        track_progress : bool, optional
+            Whether to track and report integration progress
+        """
         self.r = r
         self.track_progress = track_progress
 
     def ivp(self, t, y):
+        """
+        Define the initial value problem for the Sitnikov system.
+
+        Implements the equations of motion for the third body in the Sitnikov problem.
+
+        Parameters:
+        -----------
+        t : float
+            Current time value
+        y : array-like
+            Current state vector [z1, v1, z2, v2, ..., zn, vn]
+
+        Returns:
+        --------
+        array-like
+            Derivatives of state vector [v1, a1, v2, a2, ..., vn, an]
+        """
         deriv = np.empty_like(y)
         
         z = y[0::2]
@@ -85,6 +146,17 @@ class DE:
         
 
 def update_progress(thread, t):
+    """
+    Update and display integration progress for a specific thread.
+
+    Parameters:
+    -----------
+    thread : int
+        Thread ID for which progress is being updated
+    t : float
+        Current time in the integration
+    """
+
     nlines = size - thread
 
     print(f"\033[{nlines}A", end="")
@@ -96,6 +168,24 @@ def update_progress(thread, t):
 
 
 def run_parallel(y0, rank, size, *args, **kwargs):
+    """
+    Run the integration in parallel using multiple threads.
+
+    Splits initial conditions among threads, performs integration,
+    and saves results to files.
+
+    Parameters:
+    -----------
+    y0 : array-like
+        Initial conditions for all integrations
+    rank : int
+        Rank of the current MPI process
+    size : int
+        Total number of processes for computation
+    *args, **kwargs
+        Additional arguments passed to scipy.integrate.solve_ivp
+    """
+
     # find how much realizations are
     # expected to be calculated by a thread
     num_per_thread = int(nz * ndot / size)
@@ -114,8 +204,6 @@ def run_parallel(y0, rank, size, *args, **kwargs):
     # perform the integration
     res = sp.integrate.solve_ivp(de.ivp, (t0, tf), y0, 
                                  *args, **kwargs)
-
-                                 #max_step = 1e-1)
 
     if track:
         comm.send(None, dest = 0, tag=tag_end)

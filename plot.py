@@ -12,6 +12,15 @@ from glob import glob
 
 
 if __name__ == "__main__":
+    """
+    Script for visualizing the results of Sitnikov problem simulations.
+
+    This script loads simulation data and generates phase portraits showing
+    the relationship between position (z) and velocity (dz/dt) of the third body
+    in the Sitnikov problem.
+    """
+
+
     try:
         plt.rcParams.update({
         "text.usetex": True,
