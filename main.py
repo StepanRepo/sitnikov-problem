@@ -95,7 +95,7 @@ def update_progress(thread, t):
 
 
 
-def run_parallel(y0, rank, size):
+def run_parallel(y0, rank, size, *args, **kwargs):
     # find how much realizations are
     # expected to be calculated by a thread
     num_per_thread = int(nz * ndot / size)
@@ -113,13 +113,12 @@ def run_parallel(y0, rank, size):
     
     # perform the integration
     res = sp.integrate.solve_ivp(de.ivp, (t0, tf), y0, 
-                                 method = "Radau",
-                                 t_eval = t_eval,
-                                 )
+                                 *args, **kwargs)
 
                                  #max_step = 1e-1)
 
-    comm.send(None, dest = 0, tag=tag_end)
+    if track:
+        comm.send(None, dest = 0, tag=tag_end)
 
 
     # split the result for convinience
@@ -128,9 +127,9 @@ def run_parallel(y0, rank, size):
     vs = res.y[1::2, :]
 
     # save the result into according files
-    np.savetxt(f"{rank}t.dat", t)
-    np.savetxt(f"{rank}zs.dat", zs)
-    np.savetxt(f"{rank}vs.dat", vs)
+    np.savetxt(f"result/{rank}t.dat", t)
+    np.savetxt(f"result/{rank}zs.dat", zs)
+    np.savetxt(f"result/{rank}vs.dat", vs)
 
 
 if __name__ == "__main__":
@@ -160,11 +159,6 @@ if __name__ == "__main__":
     if size == 1:
         track = False
 
-    # save used configuration to use it 
-    # while plotting the results
-    if rank == 0 or size == 1:
-        with open(".last_config.yaml", "w") as stream:
-            yaml.safe_dump(conf, stream)
 
     # read some configuration parameters
     a = conf["orbit"]["a"]
@@ -178,6 +172,7 @@ if __name__ == "__main__":
     dotz1 = conf["grid"]["dotz1"]
     ndot = conf["grid"]["ndot"]
     track = conf["parallel"]["track"]
+    method = conf["integrator"]["method"]
 
     if t0 < 0 or tf < 0:
         raise AttributeError("Time domain can only be positive")
@@ -185,11 +180,13 @@ if __name__ == "__main__":
 
 
     # make a grid of initial conditions
-    z = np.linspace(z0, z1, nz, dtype = np.float128)
-    dotz = np.linspace(dotz0, dotz1, ndot, dtype = np.float128)
+    z = np.linspace(z0, z1, nz, dtype = np.float64)
+    dotz = np.linspace(dotz0, dotz1, ndot, dtype = np.float64)
 
+    # make a time grid to evaluate function at 
     t_eval = np.arange(t0, tf, 2*np.pi)
 
+    # make a grid of initial parameters
     z, dotz = np.meshgrid(z, dotz)
 
     # merge the grid into 1d-array
@@ -204,11 +201,17 @@ if __name__ == "__main__":
     body = Primary(a, e)
     de = DE(body, track_progress = track)
 
+    # solve on a single core
+    if size == 1:
+        print(f"Running in a single thread without tracking")
+        run_parallel(y0, 1, 1, method = method, t_eval = t_eval)
     # solve in parallel
-    if size > 1:
+    else:
 
         # update the progress using 0th thread
         if rank == 0 and track:
+            print(f"Running in {size} threads with tracking")
+
             remaining = comm.Get_size() - 1
 
             print(f"THREAD {0}: tracking progress")
@@ -229,15 +232,17 @@ if __name__ == "__main__":
 
         # and solve the problem with other threads
         elif rank > 0 and track:
-            run_parallel(y0, rank, size-1)
+            run_parallel(y0, rank, size-1, 
+                         method = method,
+                         t_eval = t_eval)
 
         # use all threads for calculation
         elif not track:
-            run_parallel(y0, rank+1, size)
+            print(f"Running in {size} threads without tracking")
+            run_parallel(y0, rank+1, size,
+                         method = method,
+                         t_eval = t_eval)
 
-    # solve on a single core
-    else:
-        run_parallel(y0, 1, 1)
 
 
 

@@ -8,17 +8,38 @@ from matplotlib.markers import MarkerStyle
 from myplot import *
 
 import yaml
+from glob import glob
 
-set_tex()
 
 if __name__ == "__main__":
+    try:
+        plt.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.sans-serif": "serif",
+        "font.size"   : 12
+        })
+    except:
+        print("TeX font is not availible")
 
-    with open(".last_config.yaml", "r") as stream:
+
+
+
+    with open("config.yaml", "r") as stream:
         conf = yaml.safe_load(stream)
 
-    size = conf["parallel"]["size"]
     rev_min = conf["plotter"]["rev_min"]
+    xmin  = conf["plotter"]["zmin"]
+    xmax  = conf["plotter"]["zmax"]
+    ymin  = conf["plotter"]["dotzmin"]
+    ymax  = conf["plotter"]["dotzmax"]
+    dpi  = conf["plotter"]["dpi"]
     track = conf["parallel"]["track"]
+
+    res_list = glob("result/*t.dat")
+    size = len(res_list)
+
+
 
 
 
@@ -27,56 +48,29 @@ if __name__ == "__main__":
     plt.xlabel(r"$z$")
     plt.ylabel(r"$\dot z$")
 
-    plt.xlim(-2.5, 2.5)
-    plt.ylim(-2, 2)
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
 
-    if size > 1:
-        size -= 1
 
     for i in range(size):
         print(f"\rProcessing thread {i+1}", end = "")
 
-        ts = np.loadtxt(f"{i+1}t.dat")
-        zs = np.loadtxt(f"{i+1}zs.dat")
-        vs = np.loadtxt(f"{i+1}vs.dat")
+        ts = np.loadtxt(f"result/{i+1}t.dat")
+        zs = np.loadtxt(f"result/{i+1}zs.dat")
+        vs = np.loadtxt(f"result/{i+1}vs.dat")
 
         zs = np.atleast_2d(zs)
         vs = np.atleast_2d(vs)
 
-        n_bodies, n_times = zs.shape
-        bodies = np.arange(n_bodies)
-
-        i = np.where(np.logical_and(
-                np.mod(ts, 2*np.pi) < 1e-2,
-                ts > rev_min * 2*np.pi))[0]
-
-#        ts_new = ts[i]
-#        zs_new = zs[:, i]
-#        vs_new = vs[:, i]
-
-
-#        ts_new = np.arange(rev_min, ts.max()-1, 1)
-#
-#        zs_new = sp.interpolate.interpn(points = (bodies, ts),
-#                                      values = zs, 
-#                                      xi = np.meshgrid(bodies, ts_new),
-#                                      method = "cubic").T
-#
-#        vs_new = sp.interpolate.interpn(points = (bodies, ts),
-#                                      values = vs, 
-#                                      xi = np.meshgrid(bodies, ts_new),
-#                                      method = "cubic").T
-#
-
-        #plt.plot(zs_new, vs_new,
         plt.plot(zs, vs,
-                 ",",
-                 color = "black", alpha = 1,
+                 ".",
+                 color = "black"
                  )
         
     print("")
 
-    save_image("123.pdf")
+    plt.savefig("123.png", dpi = dpi)
+
 
 
 

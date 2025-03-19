@@ -3,8 +3,8 @@ orbit:
   e: 0.1
 
 grid:
-  nz: 10
-  ndot: 10
+  nz: 3
+  ndot: 3
   z0: -3
   z1: 3
   dotz0: -2
@@ -13,11 +13,16 @@ grid:
   tf: 1000.0
 
 integrator:
-  method: "RK45"
+  method: "Radau"
 
 plotter:
   rev_min: 10
+  zmin: -2.5
+  zmax: 2.5
+  dotzmin: -2.0
+  dotzmax: 2.0
+  dpi: 400
 
 parallel:
-  track: True
+  track: false
 
