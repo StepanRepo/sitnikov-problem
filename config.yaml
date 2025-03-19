@@ -1,0 +1,23 @@
+orbit:
+  a: 1.0
+  e: 0.1
+
+grid:
+  nz: 10
+  ndot: 10
+  z0: -3
+  z1: 3
+  dotz0: -2
+  dotz1: 2
+  t0: 0.0
+  tf: 1000.0
+
+integrator:
+  method: "RK45"
+
+plotter:
+  rev_min: 10
+
+parallel:
+  track: True
+
