@@ -24,7 +24,7 @@ All requirements are listed in `requirements.txt` file for Python environment.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/sitnikov-problem.git
+git clone https://github.com/StepanRepo/sitnikov-problem.git
 cd sitnikov-problem
 ```
 
