@@ -5,8 +5,6 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from matplotlib.markers import MarkerStyle
 
-from myplot import *
-
 import yaml
 from glob import glob
 
@@ -72,7 +70,7 @@ if __name__ == "__main__":
         vs = np.atleast_2d(vs)
 
         plt.plot(zs, vs,
-                 ".",
+                 ",",
                  color = "black"
                  )
         

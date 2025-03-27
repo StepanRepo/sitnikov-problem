@@ -11,7 +11,6 @@ from mpi4py.util import dtlib
 
 
 import matplotlib.pyplot as plt
-from myplot import *
 
 
 eps = 1e-8
@@ -140,7 +139,8 @@ class DE:
         deriv[1::2] = -z / np.sqrt(self.r(t)**2 + z**2) ** 3
 
         if self.track_progress and size > 1:
-            comm.isend(t, dest = 0, tag=tag_data)
+            if np.mod(t, 1) < 1e-2:
+                comm.isend(t, dest = 0, tag=tag_data)
 
         return deriv
         
